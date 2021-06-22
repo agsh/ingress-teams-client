@@ -18,10 +18,10 @@ function wrapper(plugin_info) {
   // Make sure that window.plugin exists. IITC defines it as a no-op function,
   // and other plugins assume the same.
   if (typeof window.plugin !== 'function') window.plugin = function () {};
-  const KEY_SETTINGS = 'plugin-live-inventory';
+  const KEY_SETTINGS = 'plugin-ingress-teams';
   let settings = {
     displayMode: 'icon',
-    serverAddress: 'https://gangleshanks.ga:4567',
+    serverAddress: 'https://intel.ingress.com',
     serverToken: '',
   };
 
