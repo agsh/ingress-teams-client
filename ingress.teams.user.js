@@ -432,10 +432,7 @@ function wrapper(plugin_info) {
           alert('Successfully uploaded');
         }
       },
-      error: (err) => {
-
-        console.error(err);
-      },
+      error: serverError,
       contentType: 'application/json; charset=utf-8',
       beforeSend: function (req) {
         req.setRequestHeader('accept', '*/*');
@@ -557,10 +554,19 @@ ${getKeyTableBody('name', 1)}
               })
           );
         }
-        callback(result);
+        if (callback) {
+          callback(result);
+        }
       },
-      error: console.error,
+      error: serverError,
     });
+  }
+
+  function serverError(response) {
+    if (response.status === 403) {
+      alert('Invalid token');
+    }
+    console.error(response);
   }
 
   function displayTeam() {
@@ -736,7 +742,7 @@ ${getKeyTableBody('name', 1)}
           ).appendTo($('#randdetails tbody'));
         }
       },
-      error: console.error,
+      error: serverError,
     });
   }
 
