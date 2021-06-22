@@ -476,12 +476,12 @@ ${getKeyTableBody('name', 1)}
 <hr/>
 <div id="live-inventory-settings">
 <h2>Settings</h2>
-<table>
+<table style="width:100%">
   <tr>
     <label>
       <td>Display mode</td>
       <td>
-        <select id="live-inventory-settings--mode">
+        <select id="live-inventory-settings--mode" style="width:100%" >
           <option value="icon" ${
   settings.displayMode === 'icon' ? 'selected' : ''
 }>Key icon</option>
@@ -495,13 +495,13 @@ ${getKeyTableBody('name', 1)}
   <tr>
     <label>
       <td>Server address</td>
-      <td><input type="text" id="teams-server-address" value="${settings.serverAddress}" /></td>
+      <td><input type="text" id="teams-server-address" value="${settings.serverAddress}" style="width:100%" /></td>
     </label>
   </tr>
   <tr>
     <label>
       <td>Server token</td>
-      <td><input type="text" id="teams-server-token" value="${settings.serverToken}"/></td>
+      <td><input type="text" id="teams-server-token" value="${settings.serverToken}" style="width:100%" /></td>
     </label>
   </tr>
 </table>
