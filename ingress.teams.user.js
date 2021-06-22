@@ -160,7 +160,7 @@ function wrapper(plugin_info) {
   function svgToIcon(str, s) {
     const url = ('data:image/svg+xml,' + encodeURIComponent(str)).replace(
       /#/g,
-      '%23',
+      '%23'
     );
     return new L.Icon({
       iconUrl: url,
@@ -178,7 +178,7 @@ function wrapper(plugin_info) {
 <line x1="18" y1="5" x2="20" y2="7" />
 <line x1="15" y1="8" x2="17" y2="10" />
 </svg>`,
-      15,
+      15
     );
   }
 
@@ -194,7 +194,7 @@ function wrapper(plugin_info) {
           addItemToCount(
             item.exampleGameEntity,
             countMap,
-            item.itemGuids.length,
+            item.itemGuids.length
           );
         });
       }
@@ -252,7 +252,7 @@ function wrapper(plugin_info) {
             item2.exampleGameEntity,
             countMap,
             item2.itemGuids.length,
-            item[2].moniker.differentiator,
+            item[2].moniker.differentiator
           );
         });
       }
@@ -302,12 +302,12 @@ function wrapper(plugin_info) {
       .map((el) => {
         return `<tr>
 <td><a href="//intel.ingress.com/?pll=${el._latlng.lat},${
-          el._latlng.lng
-        }" onclick="zoomToAndShowPortal('${el.portalCoupler.portalGuid}',[${
-          el._latlng.lat
-        },${el._latlng.lng}]); return false;">${
-          el.portalCoupler.portalTitle
-        }</a></td>
+  el._latlng.lng
+}" onclick="zoomToAndShowPortal('${el.portalCoupler.portalGuid}',[${
+  el._latlng.lat
+},${el._latlng.lng}]); return false;">${
+  el.portalCoupler.portalTitle
+}</a></td>
 <td>${el.count}</td>
 <td>${el._formattedDistance}</td>
 <td>${el.capsules.map((e) => capsuleNames[e] || e).join(', ')}</td>
@@ -368,8 +368,8 @@ function wrapper(plugin_info) {
     const str = [
       'Type\tRarity\tCount',
       ...thisPlugin.itemCount.map((i) =>
-        [i.type, i.resourceRarity, i.count].join('\t'),
-      ),
+        [i.type, i.resourceRarity, i.count].join('\t')
+      )
     ].join('\n');
     navigator.clipboard.writeText(str);
   }
@@ -384,9 +384,9 @@ function wrapper(plugin_info) {
           `https//intel.ingress.com/?pll=${el._latlng.lat},${el._latlng.lng}`,
           el.portalCoupler.portalGuid,
           el.count,
-          el.capsules.map((e) => capsuleNames[e] || e).join(','),
-        ].join('\t'),
-      ),
+          el.capsules.map((e) => capsuleNames[e] || e).join(',')
+        ].join('\t')
+      )
     ].join('\n');
     navigator.clipboard.writeText(str);
   }
@@ -432,7 +432,10 @@ function wrapper(plugin_info) {
           alert('Successfully uploaded');
         }
       },
-      error: console.error,
+      error: (err) => {
+
+        console.error(err);
+      },
       contentType: 'application/json; charset=utf-8',
       beforeSend: function (req) {
         req.setRequestHeader('accept', '*/*');
@@ -483,11 +486,11 @@ ${getKeyTableBody('name', 1)}
       <td>
         <select id="live-inventory-settings--mode">
           <option value="icon" ${
-                  settings.displayMode === 'icon' ? 'selected' : ''
-                }>Key icon</option>
+  settings.displayMode === 'icon' ? 'selected' : ''
+}>Key icon</option>
           <option value="count" ${
-                  settings.displayMode === 'count' ? 'selected' : ''
-                }>Number of keys</option>
+  settings.displayMode === 'count' ? 'selected' : ''
+}>Number of keys</option>
         </select>
       </td>
     </label>
@@ -507,8 +510,8 @@ ${getKeyTableBody('name', 1)}
 </table>
 <h3>Capsule names</h3>
 <textarea id="live-inventory-settings--capsule-names" placeholder="CAPSULEID:Display name">${
-        settings.capsuleNames || ''
-      }</textarea>
+  settings.capsuleNames || ''
+}</textarea>
 </div>
 </div>`,
       title: 'Live Inventory',
@@ -548,10 +551,10 @@ ${getKeyTableBody('name', 1)}
           // thisPlugin.teamKeysArray = result;
           thisPlugin.teamKeysMap = {};
           result.forEach(
-              (item) =>
-                  (thisPlugin.teamKeysMap[item.id.replace(/\-/g, '') + '.16'] = {
-                    count: item.keys.reduce((acc, key) => acc + key.count, 0),
-                  }),
+            (item) =>
+              (thisPlugin.teamKeysMap[item.id.replace(/-/g, '') + '.16'] = {
+                count: item.keys.reduce((acc, key) => acc + key.count, 0),
+              })
           );
         }
         callback(result);
@@ -578,12 +581,12 @@ ${getKeyTableBody('name', 1)}
     return item.keys.map((key, i) => {
       return `<tr>
       ${
-        i === 0
-          ? `<td rowspan="${item.keys.length}" class="help">
+  i === 0
+    ? `<td rowspan="${item.keys.length}" class="help">
                 <a href="/?pll=${item.lat},${item.lng}" onclick="window.selectPortalByLatLng(${item.lat}, ${item.lng});return false">${item.title}</a>
              </td>`
-          : ''
-      }
+    : ''
+}
       <td class="help"><abbr title="${key.date}">${key.name}</abbr></td>
       <td>${key.count}</td>
     </tr>`;
@@ -634,7 +637,7 @@ ${getKeyTableBody('name', 1)}
           L,
           k.portalCoupler.portalLocation.split(',').map((e) => {
             return HexToSignedFloat(e);
-          }),
+          })
         );
       }
       k._distance = k._latlng.distanceTo(center);
@@ -669,7 +672,7 @@ ${getKeyTableBody('name', 1)}
           {
             lastQueryTimestamp: 0,
           },
-          (data, textStatus, jqXHR) => {
+          (data, textStatus, jqXHR ) => {
             localStorage[KEY_SETTINGS] = JSON.stringify({
               data: data,
               expires: Date.now() + 10 * 60 * 1000, // request data only once per five minutes, or we might hit a rate limit
@@ -679,7 +682,7 @@ ${getKeyTableBody('name', 1)}
           },
           (data, textStatus, jqXHR) => {
             console.error(data);
-          },
+          }
         );
       }
     });
@@ -708,28 +711,28 @@ ${getKeyTableBody('name', 1)}
           countData.count
         }</td><th>Keys</th><th>Capsules</th><td class="randdetails-capsules">${countData.capsules
           .map((e) => capsuleNames[e] || e)
-          .join(', ')}</td></tr>`,
+          .join(', ')}</td></tr>`
       ).appendTo($('#randdetails tbody'));
     }
     $.ajax({
       url: `${settings.serverAddress}/portals/${p.guid.split('.')[0]}`,
       headers: {
-          Authorization: settings.serverToken,
+        Authorization: settings.serverToken,
       },
       success: (result) => {
         if (result && $('#teams-portal-keys').length === 0) {
           $(
-              `${result
-                  .map((item, i) => {
-                    return `<tr>
+            `${result
+              .map((item, i) => {
+                return `<tr>
               ${i === 0 ? '<th id="teams-portal-keys">Team</th>' : '<td></td>'}
               <td colspan="2" class="help"><abbr title="${item.date}">${
-                        item.name
-                    }</abbr></td>
+  item.name
+}</abbr></td>
               <td>${item.count}</td>
             </tr>`;
-                  })
-                  .join('')}`,
+              })
+              .join('')}`
           ).appendTo($('#randdetails tbody'));
         }
       },
@@ -848,7 +851,7 @@ white-space: normal;
 #randdetails .randdetails-keys th {
 vertical-align: top;
 }
-`,
+`
       )
       .appendTo('head');
 
@@ -901,11 +904,11 @@ vertical-align: top;
     const script = document.createElement('script');
     script.appendChild(
       document.createTextNode(
-        '(' + wrapper + ')(' + JSON.stringify(plugin_info) + ');',
-      ),
+        '(' + wrapper + ')(' + JSON.stringify(plugin_info) + ');'
+      )
     );
     (document.body || document.head || document.documentElement).appendChild(
-      script,
+      script
     );
   } else {
     // Tampermonkey, run code directly
