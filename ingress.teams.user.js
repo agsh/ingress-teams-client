@@ -563,8 +563,12 @@ ${getKeyTableBody('name', 1)}
   }
 
   function serverError(response) {
-    if (response.status === 403) {
-      alert('Invalid token');
+    switch (response.status) {
+      case 403: alert('Invalid token');
+        break;
+      case 0: alert('Invalid server address');
+        break;
+      default: alert(`Unknown error ${response.status}`);
     }
     console.error(response);
   }
