@@ -1,6 +1,6 @@
 // ==UserScript==
 // @id liveInventory
-// @name IITC Plugin: Live Inventory
+// @name IITC Plugin: Teams (Live Inventory)
 // @category Info
 // @version 0.0.12
 // @namespace	https://github.com/EisFrei/IngressLiveInventory
@@ -9,6 +9,7 @@
 // @homepageURL	https://github.com/EisFrei/IngressLiveInventory
 // @description Show current ingame inventory
 // @author EisFrei
+// @author agsh
 // @include		https://intel.ingress.com/*
 // @match		https://intel.ingress.com/*
 // @grant			none
@@ -64,6 +65,39 @@ function wrapper(plugin_info) {
     ULTRA_LINK_AMP: 'Ultra-Link',
     ULTRA_STRIKE: 'US',
   };
+
+  const CSS_STYLES = `
+.plugin-live-inventory-count {
+  font-size: 10px;
+  color: #FFFFBB;
+  font-family: monospace;
+  text-align: center;
+  text-shadow: 0 0 1px black, 0 0 1em black, 0 0 0.2em black;
+  pointer-events: none;
+  -webkit-text-size-adjust:none;
+}
+  #live-inventory th {
+  background-color: rgb(27, 65, 94);
+  cursor: pointer;
+}
+#live-inventory-settings {
+  margin-top: 2em;
+}
+#live-inventory-settings h2{
+  line-height: 2em;
+}
+#live-inventory-settings--capsule-names{
+  min-height: 200px;
+  min-width: 400px;
+}
+#randdetails td.randdetails-capsules {
+  white-space: normal;
+}
+#randdetails .randdetails-keys td,
+#randdetails .randdetails-keys th {
+  vertical-align: top;
+}
+`;
 
   function checkSubscription(callback) {
     var versionStr = niantic_params.CURRENT_VERSION;
@@ -402,7 +436,7 @@ function wrapper(plugin_info) {
   }
 
   function uploadKeys() {
-    if (thisPlugin.keyCount.length === 0) {
+    if (thisPlugin.keyCount.length === 0 || !settings.serverAddress || settings.serverToken) {
       return;
     }
     updateSettingsAndSave();
@@ -443,73 +477,67 @@ function wrapper(plugin_info) {
 
   function displayInventory() {
     dialog({
-      html: `<div id="live-inventory">
-<div id="live-inventory-tables">
-<table id="live-inventory-item-table">
-<thead>
-<tr>
-<th class="" data-orderby="type">Type</th>
-<th class="" data-orderby="rarity">Rarity</th>
-<th class="" data-orderby="count">Count</th>
-</tr>
-</thead>
-<tbody>
-${getItemTableBody('type', 1)}
-</tbody>
-</table>
-<hr/>
-
-<table id="live-inventory-key-table">
-<thead>
-<tr>
-<th class="" data-orderby="name">Portal</th>
-<th class="" data-orderby="count">Count</th>
-<th class="" data-orderby="distance">Distance</th>
-<th class="" data-orderby="capsule">Capsules</th>
-</tr>
-</thead>
-<tbody>
-${getKeyTableBody('name', 1)}
-</tbody>
-</table>
-</div>
-<hr/>
-<div id="live-inventory-settings">
-<h2>Settings</h2>
-<table style="width:100%">
-  <tr>
-    <label>
-      <td>Display mode</td>
-      <td>
-        <select id="live-inventory-settings--mode" style="width:100%" >
-          <option value="icon" ${
-  settings.displayMode === 'icon' ? 'selected' : ''
-}>Key icon</option>
-          <option value="count" ${
-  settings.displayMode === 'count' ? 'selected' : ''
-}>Number of keys</option>
-        </select>
-      </td>
-    </label>
-  </tr>
-  <tr>
-    <label>
-      <td>Server address</td>
-      <td><input type="text" id="teams-server-address" value="${settings.serverAddress}" style="width:100%" /></td>
-    </label>
-  </tr>
-  <tr>
-    <label>
-      <td>Server token</td>
-      <td><input type="text" id="teams-server-token" value="${settings.serverToken}" style="width:100%" /></td>
-    </label>
-  </tr>
-</table>
-<h3>Capsule names</h3>
-<textarea id="live-inventory-settings--capsule-names" placeholder="CAPSULEID:Display name">${
-  settings.capsuleNames || ''
-}</textarea>
-</div>
+      html: `
+<div id="live-inventory">
+  <div id="live-inventory-tables">
+    <table id="live-inventory-item-table">
+      <thead>
+        <tr>
+          <th class="" data-orderby="type">Type</th>
+          <th class="" data-orderby="rarity">Rarity</th>
+          <th class="" data-orderby="count">Count</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${getItemTableBody('type', 1)}
+      </tbody>
+    </table>
+    <hr/>
+    <table id="live-inventory-key-table">
+      <thead>
+        <tr>
+          <th class="" data-orderby="name">Portal</th>
+          <th class="" data-orderby="count">Count</th>
+          <th class="" data-orderby="distance">Distance</th>
+          <th class="" data-orderby="capsule">Capsules</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${getKeyTableBody('name', 1)}
+      </tbody>
+    </table>
+  </div>  
+  <hr/>  
+  <div id="live-inventory-settings">
+    <h2>Settings</h2>
+    <table style="width:100%">
+      <tr>
+        <label>
+          <td>Display mode</td>
+          <td>
+            <select id="live-inventory-settings--mode" style="width:100%" >
+              <option value="icon" ${settings.displayMode === 'icon' ? 'selected' : ''}>Key icon</option>
+              <option value="count" ${settings.displayMode === 'count' ? 'selected' : ''}>Number of keys</option>
+            </select>
+          </td>
+        </label>
+      </tr>
+      <tr>
+        <label>
+          <td>Server address</td>
+          <td><input type="text" id="teams-server-address" value="${settings.serverAddress || ''}" style="width:100%" /></td>
+        </label>
+      </tr>
+      <tr>
+        <label>
+          <td>Server token</td>
+          <td><input type="text" id="teams-server-token" value="${settings.serverToken || ''}" style="width:100%" /></td>
+        </label>
+      </tr>
+    </table>
+    <h3>Capsule names</h3>
+    <textarea id="live-inventory-settings--capsule-names" placeholder="CAPSULEID:Display name">${settings.capsuleNames || ''}</textarea>
+  </div>
 </div>`,
       title: 'Live Inventory',
       id: 'live-inventory',
@@ -538,6 +566,9 @@ ${getKeyTableBody('name', 1)}
   }
 
   function getTeamKeys(callback) {
+    if (!settings.serverAddress || settings.serverToken) {
+      return;
+    }
     $.ajax({
       url: `${settings.serverAddress}/keys`,
       headers: {
@@ -581,9 +612,9 @@ ${getKeyTableBody('name', 1)}
 	<table id="live-inventory-key-table">
     <thead>
       <tr>
-        <th class="" data-orderby="name">Portal</th>
-        <th class="" data-orderby="user">User</th>
-        <th class="" data-orderby="count">Count</th>
+        <th data-orderby="name">Portal</th>
+        <th data-orderby="user">User</th>
+        <th data-orderby="count">Count</th>
       </tr>
   </thead>
 <tbody>
@@ -593,15 +624,15 @@ ${getKeyTableBody('name', 1)}
       ${
   i === 0
     ? `<td rowspan="${item.keys.length}" class="help">
-                <a href="/?pll=${item.lat},${item.lng}" onclick="window.selectPortalByLatLng(${item.lat}, ${item.lng});return false">${item.title}</a>
-             </td>`
+          <a href="/?pll=${item.lat},${item.lng}" onclick="window.selectPortalByLatLng(${item.lat},${item.lng});return false">${item.title}</a>
+       </td>`
     : ''
 }
       <td class="help"><abbr title="${key.date}">${key.name}</abbr></td>
       <td>${key.count}</td>
     </tr>`;
-    });
-  })}
+    }).join('');
+  }).join('')}
 </tbody>
 </table>
 </div>`,
@@ -663,18 +694,18 @@ ${getKeyTableBody('name', 1)}
   }
 
   function loadInventory() {
-    getTeamKeys();
+    let localData;
     try {
-      const localData = JSON.parse(localStorage[KEY_SETTINGS]);
+      localData = JSON.parse(localStorage[KEY_SETTINGS]);
       if (localData && localData.settings) {
         settings = localData.settings;
       }
-      if (localData && localData.expires > Date.now() && localData.data) {
-        prepareData(localData.data);
-        return;
-      }
     } catch (e) {}
-
+    getTeamKeys();
+    if (localData && localData.expires > Date.now() && localData.data) {
+      prepareData(localData.data);
+      return;
+    }
     checkSubscription((err, data) => {
       if (data && data.result === true) {
         window.postAjax(
@@ -683,12 +714,19 @@ ${getKeyTableBody('name', 1)}
             lastQueryTimestamp: 0,
           },
           (data, textStatus, jqXHR ) => {
+            const sendNewDataToServer = !localData || !localData.expiresServer || localData.expiresServer < Date.now();
             localStorage[KEY_SETTINGS] = JSON.stringify({
               data: data,
-              expires: Date.now() + 10 * 60 * 1000, // request data only once per five minutes, or we might hit a rate limit
+              expires: Date.now() + 10 * 60 * 1000, // request data only once per ten minutes, or we might hit a rate limit
+              expiresServer: Date.now() + 1000 * 60 * 60 * 24 * 2, // send data to server every two days
               settings: settings,
             });
             prepareData(data);
+            console.log('I');
+            if (sendNewDataToServer) {
+              alert('Keys data updated in team');
+              uploadKeys();
+            }
           },
           (data, textStatus, jqXHR) => {
             console.error(data);
@@ -704,6 +742,7 @@ ${getKeyTableBody('name', 1)}
       const localData = JSON.parse(localStorage[KEY_SETTINGS]);
       ls.data = localData.data;
       ls.expires = localData.expires;
+      ls.expiresServer = localData.expiresServer;
     } catch (e) {}
     ls.settings = settings;
     localStorage[KEY_SETTINGS] = JSON.stringify(ls);
@@ -820,49 +859,20 @@ ${getKeyTableBody('name', 1)}
   }
 
   function setup() {
+    const $toolbox = $('#toolbox');
+
     loadInventory();
+
     $('<a href="#">')
       .text('Inventory')
       .click(displayInventory)
-      .appendTo($('#toolbox'));
+      .appendTo($toolbox);
 
-    $('<a href="#">').text('Team').click(displayTeam).appendTo($('#toolbox'));
+    $('<a href="#">').text('Team').click(displayTeam).appendTo($toolbox);
 
     $('<style>')
       .prop('type', 'text/css')
-      .html(
-        `.plugin-live-inventory-count {
-font-size: 10px;
-color: #FFFFBB;
-font-family: monospace;
-text-align: center;
-text-shadow: 0 0 1px black, 0 0 1em black, 0 0 0.2em black;
-pointer-events: none;
--webkit-text-size-adjust:none;
-}
-#live-inventory th {
-background-color: rgb(27, 65, 94);
-cursor: pointer;
-}
-#live-inventory-settings {
-margin-top: 2em;
-}
-#live-inventory-settings h2{
-line-height: 2em;
-}
-#live-inventory-settings--capsule-names{
-min-height: 200px;
-min-width: 400px;
-}
-#randdetails td.randdetails-capsules {
-white-space: normal;
-}
-#randdetails .randdetails-keys td,
-#randdetails .randdetails-keys th {
-vertical-align: top;
-}
-`
-      )
+      .html(CSS_STYLES)
       .appendTo('head');
 
     window.addHook('portalDetailsUpdated', portalDetailsUpdated);
