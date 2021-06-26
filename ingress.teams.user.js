@@ -731,7 +731,7 @@ function wrapper(plugin_info) {
       </tr>
       <tr>
         <th data-orderby="name">
-          <input id="teams-name-filter" type="text" placeholder="Portal name"/>
+          <input id="teams-name-filter" type="text" placeholder="Portal name" ${options.name ? `value="${options.name}"` : ''}/>
         </th>
         <th data-orderby="player">Player</th>
         <th data-orderby="count">Count</th>
@@ -771,7 +771,12 @@ function wrapper(plugin_info) {
           displayTeam({ page: e.target.dataset.page });
         }
       });
+      $('#teams-name-filter').on('keypress', debounce(nameFilterChange, 777));
     });
+  }
+
+  function nameFilterChange() {
+    displayTeam({ page: '1', name: $('#teams-name-filter').val() });
   }
 
   function preparePortalKeyMap() {
