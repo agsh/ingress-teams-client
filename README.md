@@ -7,14 +7,16 @@ For now this is a very early version.
 
 ## Plugin installation & features
 
-Add plugin from https://github.com/agsh/IngressLiveInventory/raw/main/liveInventory.user.js
+* First of all, remove `LiveInventory` plugin if installed.
+
+* Add plugin from https://github.com/agsh/ingress-teams-client/raw/main/ingress.teams.user.js
 Then you'll see two new menu items in the portal info: `Inventory` and `Teams`.
 
-![Portal info](https://github.com/agsh/ingress-teams-client/raw/main/img/f.png "Portal info")
+  ![Portal info](https://github.com/agsh/ingress-teams-client/raw/main/img/f.png "Portal info")
 
 * Add server address and team token at the bottom of the `Inventory` menu
 
-  ![Inventory menu](https://github.com/agsh/ingress-teams-client/raw/main/img/g.png "Inventory menu")
+  ![Inventory menu](https://github.com/agsh/ingress-teams-client/raw/main/img/h.png "Inventory menu")
 
 * Then upload your stats by pressing `Upload Keys` button from the `Inventory` menu
 

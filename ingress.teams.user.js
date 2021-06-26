@@ -771,7 +771,7 @@ function wrapper(plugin_info) {
           displayTeam({ page: e.target.dataset.page });
         }
       });
-      $('#teams-name-filter').on('keypress', debounce(nameFilterChange, 777));
+      $('#teams-name-filter').on('keypress', debounce(nameFilterChange, 1331));
     });
   }
 
