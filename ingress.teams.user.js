@@ -2,12 +2,12 @@
 // @id liveInventory
 // @name IITC Plugin: Teams (Live Inventory)
 // @category Info
-// @version 0.0.12
-// @namespace	https://github.com/EisFrei/IngressLiveInventory
-// @downloadURL	https://github.com/EisFrei/IngressLiveInventory/raw/main/liveInventory.user.js
-// @updateURL	https://github.com/EisFrei/IngressLiveInventory/raw/main/liveInventory.user.js
-// @homepageURL	https://github.com/EisFrei/IngressLiveInventory
-// @description Show current ingame inventory
+// @version 0.0.1
+// @namespace	https://github.com/agsh/ingress-teams-client
+// @downloadURL	https://github.com/agsh/ingress-teams-client/raw/main/ingress.teams.user.js
+// @updateURL	https://github.com/agsh/ingress-teams-client/raw/main/ingress.teams.user.js
+// @homepageURL	https://github.com/agsh/ingress-teams-client
+// @description Show current ingame inventory and keys from all team members
 // @author EisFrei
 // @author agsh
 // @include		https://intel.ingress.com/*
@@ -22,21 +22,30 @@ function wrapper(plugin_info) {
   const KEY_SETTINGS = 'plugin-ingress-teams';
   let settings = {
     displayMode: 'icon',
-    serverAddress: 'https://intel.ingress.com',
+    serverAddress: '',
     serverToken: '',
+    serverAutoUpdate: '2',
+    serverPerPage: '200',
   };
+  const dateFormatter = new Intl.DateTimeFormat('ru', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: 'numeric',
+  });
 
-  window.plugin.LiveInventory = function () {};
+  window.plugin.Teams = function () {};
 
-  const thisPlugin = window.plugin.LiveInventory;
+  const thisPlugin = window.plugin.Teams;
   // Name of the IITC build for first-party plugins
-  plugin_info.buildName = 'LiveInventory';
+  plugin_info.buildName = 'Teams';
 
   // Datetime-derived version of the plugin
-  plugin_info.dateTimeVersion = '202102100950';
+  plugin_info.dateTimeVersion = '202106260430';
 
   // ID/name of the plugin
-  plugin_info.pluginId = 'liveInventory';
+  plugin_info.pluginId = 'teams';
 
   const translations = {
     BOOSTED_POWER_CUBE: 'Hypercube',
@@ -76,7 +85,7 @@ function wrapper(plugin_info) {
   pointer-events: none;
   -webkit-text-size-adjust:none;
 }
-  #live-inventory th {
+#live-inventory th {
   background-color: rgb(27, 65, 94);
   cursor: pointer;
 }
@@ -87,7 +96,7 @@ function wrapper(plugin_info) {
   line-height: 2em;
 }
 #live-inventory-settings--capsule-names{
-  min-height: 200px;
+  min-height: 50px;
   min-width: 400px;
 }
 #randdetails td.randdetails-capsules {
@@ -97,7 +106,45 @@ function wrapper(plugin_info) {
 #randdetails .randdetails-keys th {
   vertical-align: top;
 }
+#live-inventory-settings table,
+#live-inventory-settings select,
+#live-inventory-settings input, 
+#live-inventory-key-table input {
+  width: 100%;
+}
+#live-team {
+  word-break: break-all;
+}
+#live-team-pages a {
+  padding: 0 2px;
+}
+#live-team-pages a span {
+  font-size: large;
+  font-weight: bold;
+}
+#live-inventory-key-table thead {
+  position: -webkit-sticky;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: rgba(8, 48, 78, 0.9);
+}
 `;
+
+  const debounce = (fun, wait) => {
+    let timeoutId;
+    const debounced = (...args) => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+      timeoutId = setTimeout(() => {
+        fun(...args);
+      }, wait);
+    };
+    return debounced;
+  };
+
+
 
   function checkSubscription(callback) {
     var versionStr = niantic_params.CURRENT_VERSION;
@@ -430,16 +477,25 @@ function wrapper(plugin_info) {
     settings.capsuleNames = $('#live-inventory-settings--capsule-names').val();
     settings.serverAddress = $('#teams-server-address').val();
     settings.serverToken = $('#teams-server-token').val();
+    settings.serverAutoUpdate = $('#teams-server-auto-update').val();
+    settings.serverPerPage = $('#teams-server-per-page').val();
     saveSettings();
     removeAllIcons();
     checkShowAllIcons();
   }
 
-  function uploadKeys() {
-    if (thisPlugin.keyCount.length === 0 || !settings.serverAddress || settings.serverToken) {
+  /**
+   * Upload key to the server
+   * @param {boolean} saveSettings save settings before upload
+   * @param {Function} callback
+   */
+  function uploadKeys(saveSettings, callback) {
+    if (saveSettings) {
+      updateSettingsAndSave();
+    }
+    if (thisPlugin.keyCount.length === 0 || !settings.serverAddress || !settings.serverToken) {
       return;
     }
-    updateSettingsAndSave();
     return $.ajax({
       url: `${settings.serverAddress}/keys`,
       type: 'POST',
@@ -462,8 +518,8 @@ function wrapper(plugin_info) {
       context: {},
       dataType: 'json',
       success: (result) => {
-        if (result.ok) {
-          alert('Successfully uploaded');
+        if (callback) {
+          callback(result);
         }
       },
       error: serverError,
@@ -510,12 +566,12 @@ function wrapper(plugin_info) {
   <hr/>  
   <div id="live-inventory-settings">
     <h2>Settings</h2>
-    <table style="width:100%">
+    <table>
       <tr>
         <label>
           <td>Display mode</td>
           <td>
-            <select id="live-inventory-settings--mode" style="width:100%" >
+            <select id="live-inventory-settings--mode">
               <option value="icon" ${settings.displayMode === 'icon' ? 'selected' : ''}>Key icon</option>
               <option value="count" ${settings.displayMode === 'count' ? 'selected' : ''}>Number of keys</option>
             </select>
@@ -525,13 +581,41 @@ function wrapper(plugin_info) {
       <tr>
         <label>
           <td>Server address</td>
-          <td><input type="text" id="teams-server-address" value="${settings.serverAddress || ''}" style="width:100%" /></td>
+          <td><input type="text" id="teams-server-address" value="${settings.serverAddress || ''}" /></td>
         </label>
       </tr>
       <tr>
         <label>
           <td>Server token</td>
-          <td><input type="text" id="teams-server-token" value="${settings.serverToken || ''}" style="width:100%" /></td>
+          <td><input type="text" id="teams-server-token" value="${settings.serverToken || ''}" /></td>
+        </label>
+      </tr>
+      <tr>
+        <label>
+          <td>Server autoupdate</td>
+          <td>
+            <select id="teams-server-auto-update">
+              <option value="666" ${settings.serverAutoUpdate === '666' ? 'selected' : ''}>Never</option>
+              <option value="0" ${settings.serverAutoUpdate === '0' ? 'selected' : ''}>Every IITC load</option>
+              <option value="1" ${settings.serverAutoUpdate === '1' ? 'selected' : ''}>One day</option>
+              <option value="2" ${settings.serverAutoUpdate === '2' ? 'selected' : ''}>Two days</option>
+              <option value="7" ${settings.serverAutoUpdate === '7' ? 'selected' : ''}>Week</option>
+            </select>
+          </td>
+        </label>
+      </tr>
+      <tr>
+        <label>
+          <td>Key items per page</td>
+          <td>
+            <select id="teams-server-per-page">
+              <option value="" ${settings.serverPerPage === '' ? 'selected' : ''}>All</option>
+              <option value="50" ${settings.serverPerPage === '50' ? 'selected' : ''}>50</option>
+              <option value="100" ${settings.serverPerPage === '100' ? 'selected' : ''}>100</option>
+              <option value="200" ${settings.serverPerPage === '200' ? 'selected' : ''}>200</option>
+              <option value="500" ${settings.serverPerPage === '500' ? 'selected' : ''}>500</option>
+            </select>
+          </td>
         </label>
       </tr>
     </table>
@@ -546,7 +630,11 @@ function wrapper(plugin_info) {
     }).dialog('option', 'buttons', {
       'Copy Items': exportItems,
       'Copy Keys': exportKeys,
-      'Upload Keys': uploadKeys,
+      'Upload Keys': uploadKeys.bind(this, true, (result) => {
+        if (result.ok) {
+          alert('Successfully uploaded');
+        }
+      }),
       OK: function () {
         $(this).dialog('close');
       },
@@ -565,8 +653,16 @@ function wrapper(plugin_info) {
     });
   }
 
-  function getTeamKeys(callback) {
-    if (!settings.serverAddress || settings.serverToken) {
+  /**
+   * Get team keys
+   * @param {Object} data
+   * @param {string} [data.name]
+   * @param {string} [data.page]
+   * @param {string} [data.limit]
+   * @param {Function} [callback]
+   */
+  function getTeamKeys(data= {}, callback) {
+    if (!settings.serverAddress || !settings.serverToken) {
       return;
     }
     $.ajax({
@@ -574,19 +670,18 @@ function wrapper(plugin_info) {
       headers: {
         Authorization: settings.serverToken,
       },
-      success: (result) => {
-        if (result) {
-          // thisPlugin.teamKeysArray = result;
-          thisPlugin.teamKeysMap = {};
-          result.forEach(
-            (item) =>
-              (thisPlugin.teamKeysMap[item.id.replace(/-/g, '') + '.16'] = {
-                count: item.keys.reduce((acc, key) => acc + key.count, 0),
-              })
-          );
-        }
+      data,
+      success: (response) => {
+        // thisPlugin.teamKeysArray = result;
+        thisPlugin.teamKeysMap = {};
+        response.result.forEach(
+          (item) =>
+            (thisPlugin.teamKeysMap[item.id.replace(/-/g, '') + '.16'] = {
+              count: item.keys.reduce((acc, key) => acc + key.count, 0),
+            })
+        );
         if (callback) {
-          callback(result);
+          callback(response.result, response.count);
         }
       },
       error: serverError,
@@ -599,53 +694,82 @@ function wrapper(plugin_info) {
         break;
       case 0: alert('Invalid server address');
         break;
-      default: alert(`Unknown error ${response.status}`);
     }
     console.error(response);
   }
 
-  function displayTeam() {
-    getTeamKeys((result) => {
+  /**
+   * @param {Object} options
+   * @param {string} [options.page]
+   * @param {string} [options.limit]
+   * @param {string} [options.name]
+   */
+  function displayTeam(options) {
+    options = options ? {
+      limit: settings.serverPerPage,
+      page: '1',
+      ...options,
+    } : {};
+    getTeamKeys(options, (result, count) => {
       dialog({
         html: `
 <div id="live-team">
 	<table id="live-inventory-key-table">
     <thead>
       <tr>
-        <th data-orderby="name">Portal</th>
-        <th data-orderby="user">User</th>
+      <td colspan="3" id="live-team-pages">
+        Total: ${count}
+        ${
+  options.limit  
+    ? Array.from(new Array(Math.floor(count / settings.serverPerPage))).map((_, i) => {
+      const page = i + 1;
+      return `<a href="#" data-page="${page}">${(page).toString() === options.page ? `<span>${page}</span>` : (page)}</a>`;
+    }).join('') 
+    : ''
+}
+      </td>
+      </tr>
+      <tr>
+        <th data-orderby="name">
+          <input id="teams-name-filter" type="text" placeholder="Portal name"/>
+        </th>
+        <th data-orderby="player">Player</th>
         <th data-orderby="count">Count</th>
       </tr>
-  </thead>
-<tbody>
-  ${result.map((item) => {
+    </thead>
+    <tbody>
+    ${result.map((item) => {
     return item.keys.map((key, i) => {
       return `<tr>
-      ${
+        ${
   i === 0
     ? `<td rowspan="${item.keys.length}" class="help">
           <a href="/?pll=${item.lat},${item.lng}" onclick="window.selectPortalByLatLng(${item.lat},${item.lng});return false">${item.title}</a>
        </td>`
     : ''
 }
-      <td class="help"><abbr title="${key.date}">${key.name}</abbr></td>
-      <td>${key.count}</td>
-    </tr>`;
+        <td class="help"><abbr title="${dateFormatter.format(new Date(key.date))}">${key.name}</abbr></td>
+        <td>${key.count}</td>
+      </tr>`;
     }).join('');
   }).join('')}
-</tbody>
-</table>
+    </tbody>
+  </table>
 </div>`,
         title: 'Team',
         id: 'live-team',
         width: 'auto',
         closeCallback: function () {},
       }).dialog('option', 'buttons', {
-        // 'Copy Items': exportItems,
-        // 'Copy Keys': exportKeys,
         OK: function () {
           $(this).dialog('close');
         },
+      });
+      // click on the pagination section
+      $('#live-team-pages').click(e => {
+        if (e.target.dataset.page) {
+          displayTeam({ page: e.target.dataset.page });
+        }
       });
     });
   }
@@ -686,11 +810,38 @@ function wrapper(plugin_info) {
     });
   }
 
-  function prepareData(data) {
+  /**
+   * @typedef InventoryItem
+   * @property {Object} resource
+   * @property {string} resource.rarity
+   * @property {string} resource.resourceType
+   * @property {Object} [timedPowerupResource]
+   * @property {Object} [portalCoupler]
+   * @property {string} portalCoupler.portalAddress
+   * @property {string} portalCoupler.portalGuid
+   * @property {string} portalCoupler.portalImageUrl
+   * @property {string} portalCoupler.portalLocation
+   * @property {string} portalCoupler.portalTitle
+   * @property {Object} [inInventory]
+   * @property {Object} inInventory.acquisitionTimestampMs
+   * @property {Object} inInventory.playerId
+   */
+
+  /**
+   * Prepare data from the getInventory request
+   * @param {{result: [{0: string, 1: number, 2: InventoryItem}]}} data
+   * @param {boolean} sendNewDataToServer
+   */
+  function prepareData(data, sendNewDataToServer) {
     thisPlugin.itemCount = prepareItemCounts(data);
     thisPlugin.keyCount = prepareKeyCounts(data);
     thisPlugin.keyMap = preparePortalKeyMap();
     updateDistances();
+    if (sendNewDataToServer) {
+      uploadKeys(false, () => {
+        alert('Keys data updated in team');
+      });
+    }
   }
 
   function loadInventory() {
@@ -698,12 +849,14 @@ function wrapper(plugin_info) {
     try {
       localData = JSON.parse(localStorage[KEY_SETTINGS]);
       if (localData && localData.settings) {
-        settings = localData.settings;
+        settings = { ...settings, ...localData.settings };
       }
     } catch (e) {}
+    const sendNewDataToServer = !localData || !localData.expiresServer || localData.expiresServer < Date.now();
+    console.log('settings', localData); // TODO remove all console.log
     getTeamKeys();
     if (localData && localData.expires > Date.now() && localData.data) {
-      prepareData(localData.data);
+      prepareData(localData.data, sendNewDataToServer);
       return;
     }
     checkSubscription((err, data) => {
@@ -714,19 +867,13 @@ function wrapper(plugin_info) {
             lastQueryTimestamp: 0,
           },
           (data, textStatus, jqXHR ) => {
-            const sendNewDataToServer = !localData || !localData.expiresServer || localData.expiresServer < Date.now();
             localStorage[KEY_SETTINGS] = JSON.stringify({
               data: data,
               expires: Date.now() + 10 * 60 * 1000, // request data only once per ten minutes, or we might hit a rate limit
-              expiresServer: Date.now() + 1000 * 60 * 60 * 24 * 2, // send data to server every two days
+              expiresServer: Date.now() + 1000 * 60 * 60 * 24 * parseInt(settings.serverAutoUpdate),
               settings: settings,
             });
-            prepareData(data);
-            console.log('I');
-            if (sendNewDataToServer) {
-              alert('Keys data updated in team');
-              uploadKeys();
-            }
+            prepareData(data, sendNewDataToServer);
           },
           (data, textStatus, jqXHR) => {
             console.error(data);
@@ -868,7 +1015,7 @@ function wrapper(plugin_info) {
       .click(displayInventory)
       .appendTo($toolbox);
 
-    $('<a href="#">').text('Team').click(displayTeam).appendTo($toolbox);
+    $('<a href="#">').text('Team').click(displayTeam.bind(null, {})).appendTo($toolbox);
 
     $('<style>')
       .prop('type', 'text/css')
