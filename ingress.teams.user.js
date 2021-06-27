@@ -783,7 +783,7 @@ function wrapper(plugin_info) {
     const keyMap = {};
     thisPlugin.keyCount.forEach((k) => {
       keyMap[k.portalCoupler.portalGuid] = k;
-    });f;
+    });
     return keyMap;
   }
 
