@@ -783,7 +783,7 @@ function wrapper(plugin_info) {
     const keyMap = {};
     thisPlugin.keyCount.forEach((k) => {
       keyMap[k.portalCoupler.portalGuid] = k;
-    });
+    });f;
     return keyMap;
   }
 
@@ -800,6 +800,9 @@ function wrapper(plugin_info) {
   }
 
   function updateDistances() {
+    if (!thisPlugin.keyCount) {
+      return;
+    }
     const center = window.map.getCenter();
     thisPlugin.keyCount.forEach((k) => {
       if (!k._latlng) {
