@@ -35,3 +35,7 @@ Then you'll see two new menu items in the portal info: `Inventory` and `Teams`.
   ![Team keys table](https://github.com/agsh/ingress-teams-client/raw/main/img/e.png "Team keys table")
 
   or just from the [API](https://gangleshanks.ga:4567/keys)
+  
+### Troubleshooting
+
+https://askubuntu.com/questions/440649/how-to-disable-ipv6-in-ubuntu-14-04/484487#484487
