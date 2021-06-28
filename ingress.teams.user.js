@@ -721,6 +721,7 @@ function wrapper(plugin_info) {
       title: 'Team',
       id: 'live-team',
       width: 'auto',
+      maxWidth: '800px',
       position: { my: 'left top', at: 'left top', of: window },
       closeCallback: function () {},
     }).dialog('option', 'buttons', {
