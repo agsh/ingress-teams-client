@@ -22,7 +22,7 @@ module.exports = {
     'linebreak-style': ['error', 'unix'],
     'quotes': ['error', 'single'],
     'semi': ['error', 'always'],
-    'indent': ['error', 2, { SwitchCase: 1 }],
+    'indent': ['error', 2, { SwitchCase: 1, 'ignoredNodes': ['TemplateLiteral > *'] }],
     'object-curly-spacing': [2, 'always'],
     'comma-dangle': ['error', {
       arrays: 'never',
