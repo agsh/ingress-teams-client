@@ -133,7 +133,7 @@ function wrapper(plugin_info) {
 
   const debounce = (fun, wait) => {
     let timeoutId;
-    const debounced = (...args) => {
+    return (...args) => {
       if (timeoutId) {
         clearTimeout(timeoutId);
       }
@@ -141,7 +141,6 @@ function wrapper(plugin_info) {
         fun(...args);
       }, wait);
     };
-    return debounced;
   };
 
 
@@ -659,32 +658,33 @@ function wrapper(plugin_info) {
    * @param {string} [data.name]
    * @param {string} [data.page]
    * @param {string} [data.limit]
-   * @param {Function} [callback]
+   * @returns {Promise<{result: {}, count: number}>}
+   * @throws {{status: number}}
    */
-  function getTeamKeys(data= {}, callback) {
+  function getTeamKeys(data= {}) {
     if (!settings.serverAddress || !settings.serverToken) {
-      return;
+      return Promise.reject(new Error('No setting for the server'));
     }
-    $.ajax({
-      url: `${settings.serverAddress}/keys`,
-      headers: {
-        Authorization: settings.serverToken,
-      },
-      data,
-      success: (response) => {
-        // thisPlugin.teamKeysArray = result;
-        thisPlugin.teamKeysMap = {};
-        response.result.forEach(
-          (item) =>
-            (thisPlugin.teamKeysMap[item.id.replace(/-/g, '') + '.16'] = {
-              count: item.keys.reduce((acc, key) => acc + key.count, 0),
-            })
-        );
-        if (callback) {
-          callback(response.result, response.count);
-        }
-      },
-      error: serverError,
+    return new Promise((resolve, reject) => {
+      $.ajax({
+        url: `${settings.serverAddress}/keys`,
+        headers: {
+          Authorization: settings.serverToken,
+        },
+        data,
+        success: (response) => {
+          // thisPlugin.teamKeysArray = result;
+          thisPlugin.teamKeysMap = {};
+          response.result.forEach(
+            (item) =>
+              (thisPlugin.teamKeysMap[item.id.replace(/-/g, '') + '.16'] = {
+                count: item.keys.reduce((acc, key) => acc + key.count, 0),
+              })
+          );
+          resolve(response);
+        },
+        error: reject,
+      });
     });
   }
 
@@ -698,85 +698,90 @@ function wrapper(plugin_info) {
     console.error(response);
   }
 
+  function displayTeam() {
+    dialog({
+      html: `
+        <div id="live-team">
+          <table id="live-inventory-key-table">
+            <thead>
+              <tr>
+              <td colspan="3" id="live-team-pages"></td>
+              </tr>
+              <tr>
+                <th data-orderby="name">
+                  <input id="teams-name-filter" type="text" placeholder="Portal name" />
+                </th>
+                <th data-orderby="player">Player</th>
+                <th data-orderby="count">Count</th>
+              </tr>
+            </thead>
+            <tbody id="live-inventory-key-table-tbody"></tbody>
+          </table>
+        </div>`,
+      title: 'Team',
+      id: 'live-team',
+      width: 'auto',
+      position: { my: 'left top', at: 'left top', of: window },
+      closeCallback: function () {},
+    }).dialog('option', 'buttons', {
+      OK: function () {
+        $(this).dialog('close');
+      },
+    });
+    // click on the pagination section
+    $('#live-team-pages').click(filterChange);
+    $('#teams-name-filter').on('keyup', debounce(filterChange, 1331));
+    displayTeamRequest();
+  }
+
   /**
+   * Request to the server to get new team data
    * @param {Object} options
-   * @param {string} [options.page]
-   * @param {string} [options.limit]
-   * @param {string} [options.name]
+   * @param {number|string} [options.page = 1] Page
+   * @param {string} [options.name] Portal title
    */
-  function displayTeam(options) {
-    options = options ? {
+  function displayTeamRequest(options = {}) {
+    options = {
       limit: settings.serverPerPage,
       page: '1',
       ...options,
-    } : {};
-    getTeamKeys(options, (result, count) => {
-      dialog({
-        html: `
-<div id="live-team">
-	<table id="live-inventory-key-table">
-    <thead>
-      <tr>
-      <td colspan="3" id="live-team-pages">
-        Total: ${count}
+    };
+    console.log(options);
+    getTeamKeys(options).then(({ result, count }) => {
+      // pagination
+      $('#live-team-pages').html(`Total: ${count}
         ${
-  options.limit  
-    ? Array.from(new Array(Math.floor(count / settings.serverPerPage))).map((_, i) => {
-      const page = i + 1;
-      return `<a href="#" data-page="${page}">${(page).toString() === options.page ? `<span>${page}</span>` : (page)}</a>`;
-    }).join('') 
-    : ''
-}
-      </td>
-      </tr>
-      <tr>
-        <th data-orderby="name">
-          <input id="teams-name-filter" type="text" placeholder="Portal name" ${options.name ? `value="${options.name}"` : ''}/>
-        </th>
-        <th data-orderby="player">Player</th>
-        <th data-orderby="count">Count</th>
-      </tr>
-    </thead>
-    <tbody>
-    ${result.map((item) => {
-    return item.keys.map((key, i) => {
-      return `<tr>
-        ${
-  i === 0
-    ? `<td rowspan="${item.keys.length}" class="help">
-          <a href="/?pll=${item.lat},${item.lng}" onclick="window.selectPortalByLatLng(${item.lat},${item.lng});return false">${item.title}</a>
-       </td>`
-    : ''
-}
-        <td class="help"><abbr title="${dateFormatter.format(new Date(key.date))}">${key.name}</abbr></td>
-        <td>${key.count}</td>
-      </tr>`;
-    }).join('');
-  }).join('')}
-    </tbody>
-  </table>
-</div>`,
-        title: 'Team',
-        id: 'live-team',
-        width: 'auto',
-        closeCallback: function () {},
-      }).dialog('option', 'buttons', {
-        OK: function () {
-          $(this).dialog('close');
-        },
-      });
-      // click on the pagination section
-      $('#live-team-pages').click(e => {
-        if (e.target.dataset.page) {
-          displayTeam({ page: e.target.dataset.page });
-        }
-      });
-      $('#teams-name-filter').on('keypress', debounce(nameFilterChange, 1331));
+          options.limit
+            ? Array.from(new Array(Math.floor(count / settings.serverPerPage))).map((_, i) => {
+              const page = i + 1;
+              return `<a href="#" data-page="${page}">${(page).toString() === options.page ? `<span>${page}</span>` : (page)}</a>`;
+            }).join('')
+            : ''
+        }`);
+      // keys table
+      $('#live-inventory-key-table-tbody').html(`
+        ${result.map((item) => {
+        return item.keys.map((key, i) => {
+          return `<tr>
+              ${
+                  i === 0
+                    ? `<td rowspan="${item.keys.length}" class="help">
+                <a href="/?pll=${item.lat},${item.lng}" onclick="window.selectPortalByLatLng(${item.lat},${item.lng});return false">${item.title}</a>
+             </td>`
+                    : ''
+                }
+              <td class="help"><abbr title="${dateFormatter.format(new Date(key.date))}">${key.name}</abbr></td>
+              <td>${key.count}</td>
+            </tr>`;
+        }).join('');
+      }).join('')}
+      `);
     });
   }
 
-  function nameFilterChange() {
-    displayTeam({ page: '1', name: $('#teams-name-filter').val() });
+  function filterChange(e) {
+    const page = e && e.target && e.target.dataset && e.target.dataset.page ? e.target.dataset.page : '1';
+    displayTeamRequest({ page, name: $('#teams-name-filter').val() });
   }
 
   function preparePortalKeyMap() {
@@ -1073,7 +1078,7 @@ function wrapper(plugin_info) {
   if (
     typeof unsafeWindow != 'undefined' ||
     typeof GM_info == 'undefined' ||
-    GM_info.scriptHandler != 'Tampermonkey'
+    GM_info.scriptHandler !== 'Tampermonkey'
   ) {
     // inject code into site context
     const script = document.createElement('script');
